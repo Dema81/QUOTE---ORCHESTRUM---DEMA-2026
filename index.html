@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -7,12 +6,16 @@
     <title>DEMA Solutions - Quote System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Babel Standalone: compila il codice TSX nel browser in tempo reale -->
+    
+    <!-- Babel Standalone per compilare React/TSX nel browser -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        
+        /* Loading Spinner */
         #root:empty::before {
-            content: "Initializing System...";
+            content: "Caricamento Sistema...";
             display: flex;
             justify-content: center;
             align-items: center;
@@ -22,35 +25,415 @@
             animation: pulse 2s infinite;
         }
         @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        
+        /* Error Display */
+        #error-display {
+            display: none;
+            padding: 2rem;
+            margin: 2rem auto;
+            max-width: 600px;
+            background: #fef2f2;
+            border: 1px solid #ef4444;
+            border-radius: 0.5rem;
+            color: #991b1b;
+            font-family: monospace;
+            text-align: left;
+            white-space: pre-wrap;
+        }
     </style>
+
     <script type="importmap">
-{
-  "imports": {
-    "react": "https://esm.sh/react@18.2.0",
-    "react-dom": "https://esm.sh/react-dom@18.2.0",
-    "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
-    "lucide-react": "https://esm.sh/lucide-react@0.460.0",
-    "react/": "https://esm.sh/react@^19.2.3/"
-  }
-}
-</script>
+    {
+      "imports": {
+        "react": "https://esm.sh/react@18.2.0",
+        "react-dom": "https://esm.sh/react-dom@18.2.0",
+        "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+        "lucide-react": "https://esm.sh/lucide-react@0.292.0"
+      }
+    }
+    </script>
 </head>
 <body>
     <div id="root"></div>
+    <div id="error-display"></div>
     
     <script type="text/babel" data-type="module">
-        import React from 'react';
+        import React, { useState, useEffect, useMemo } from 'react';
         import ReactDOM from 'react-dom/client';
-        import App from './App.tsx';
+        import { Mail, Send, ThumbsUp, Globe, ChevronRight, Eye, Copy, Check } from 'lucide-react';
 
-        const rootElement = document.getElementById('root');
-        if (rootElement) {
-            const root = ReactDOM.createRoot(rootElement);
-            root.render(
-                <React.StrictMode>
-                    <App />
-                </React.StrictMode>
+        // --- GESTIONE ERRORI GLOBALE ---
+        window.onerror = function(message, source, lineno, colno, error) {
+            const errorDiv = document.getElementById('error-display');
+            const rootDiv = document.getElementById('root');
+            if (errorDiv && rootDiv) {
+                rootDiv.style.display = 'none';
+                errorDiv.style.display = 'block';
+                errorDiv.innerHTML = `<strong>Errore Critico:</strong>\n${message}\n\nFile: ${source}:${lineno}`;
+                console.error(error);
+            }
+        };
+
+        // --- TIPI E DATI ---
+        const Language = {
+          ENGLISH: 'ENGLISH',
+          ITALIAN: 'ITALIAN',
+          SPANISH: 'SPANISH',
+          CATALAN: 'CATALAN',
+          GERMAN: 'GERMAN',
+          FRENCH: 'FRENCH'
+        };
+
+        const SIGNATURES = [
+          { id: 'aleksandra', name: 'Aleksandra Labudovic', role: 'Sales Manager' },
+          { id: 'alessia', name: 'Alessia Santoro', role: 'Sales Manager' },
+          { id: 'chiara', name: 'Chiara Tommasini', role: 'Sales Manager' },
+          { id: 'gaetano', name: 'Gaetano Gambuto', role: 'Sales Manager' },
+          { id: 'luka', name: 'Luka Pavlovic', role: 'Sales Manager' },
+          { id: 'maria', name: 'María Céspedes', role: 'Sales Manager' },
+        ];
+
+        const LOGO_URL = "https://raw.githubusercontent.com/dema81/QUOTE---ORCHESTRUM---DEMA-2026/main/logo_2.png";
+
+        const TRANSLATIONS = {
+          [Language.ENGLISH]: {
+            subjectPrefix: 'QUOTE', salutation: 'Dear', intro: 'please find attached the requested quotation.',
+            delivery: 'Delivery time: {days} working days from your order confirmation.',
+            decision: 'You can communicate your decision through the following link:',
+            feedback: 'Your feedback, even in case of rejection, is very important to us in order to constantly analyze and improve the quality of our proposals.',
+            questions: "If you have any questions, please don't hesitate to contact us.",
+            wishing: "Wishing you a good day and looking forward to hearing from you.",
+            kindRegards: 'Kind regards,', btnAccept: 'Accept quote', btnReject: 'Reject quote', btnSendResponse: 'Send Response',
+            sentTitle: 'Success!', sentBody: 'Your response has been prepared.',
+            labelQuoteId: 'Quote ID', labelSubject: 'Subject', labelAmount: 'Amount',
+            linkText: 'ACCEPT OR REJECT THE QUOTE'
+          },
+          [Language.ITALIAN]: {
+            subjectPrefix: 'PREVENTIVO', salutation: 'Gentile', intro: 'in allegato trovi il preventivo richiesto.',
+            delivery: 'Tempi di consegna: {days} giorni lavorativi dalla conferma.',
+            decision: 'Puoi comunicare la tua decisione tramite il seguente link:',
+            feedback: 'Il tuo feedback, anche in caso di rifiuto, è molto importante per noi per analizzare e migliorare costantemente la qualità delle nostre proposte.',
+            questions: "Per qualsiasi domanda, non esitare a contattarci.",
+            wishing: "Ti auguriamo una buona giornata e restiamo in attesa di un tuo riscontro.",
+            kindRegards: 'Cordiali saluti,', btnAccept: 'Accetta preventivo', btnReject: 'Rifiuta preventivo', btnSendResponse: 'Invia Risposta',
+            sentTitle: 'Inviato!', sentBody: 'La tua risposta è stata preparata.',
+            labelQuoteId: 'ID Preventivo', labelSubject: 'Oggetto', labelAmount: 'Importo',
+            linkText: 'ACCETTA o RIFIUTA IL PREVENTIVO'
+          },
+          [Language.SPANISH]: {
+            subjectPrefix: 'PRESUPUESTO', salutation: 'Estimado/a', intro: 'adjunto encontrará el presupuesto solicitado.',
+            delivery: 'Plazo de entrega: {days} días laborables desde la confirmación.',
+            decision: 'Puede comunicar su decisión a través del siguiente enlace:',
+            feedback: 'Su opinión, incluso en caso de rechazo, es muy importante para nosotros para analizar y mejorar constantemente la calidad de nuestras propuestas.',
+            questions: "Si tiene alguna pregunta, no dude en contactarnos.",
+            wishing: "Le deseamos un buen día y esperamos tener noticias suyas.",
+            kindRegards: 'Saludos cordiales,', btnAccept: 'Aceptar', btnReject: 'Rechazar', btnSendResponse: 'Enviar Respuesta',
+            sentTitle: '¡Enviado!', sentBody: 'Su respuesta ha sido preparada.',
+            labelQuoteId: 'ID Presupuesto', labelSubject: 'Asunto', labelAmount: 'Importe',
+            linkText: 'ACEPTAR o RECHAZAR EL PRESUPUESTO'
+          },
+          [Language.FRENCH]: {
+            subjectPrefix: 'DEVIS', salutation: 'Cher/Chère', intro: 'veuillez trouver ci-joint le devis demandé.',
+            delivery: 'Délai de livraison : {days} jours ouvrables à compter de la confirmation.',
+            decision: 'Vous pouvez communiquer votre décision via le lien suivant :',
+            feedback: 'Votre avis, même en cas de refus, est très important pour nous afin d\'analyser et d\'améliorer constamment la qualité de nos propositions.',
+            questions: "Si vous avez des questions, n'hésitez pas à nous contacter.",
+            wishing: "Nous vous souhaitons une bonne journée dans l'attente de vos nouvelles.",
+            kindRegards: 'Cordialement,', btnAccept: 'Accepter', btnReject: 'Refuser', btnSendResponse: 'Envoyer la réponse',
+            sentTitle: 'Envoyé !', sentBody: 'Votre réponse a été préparée.',
+            labelQuoteId: 'ID Devis', labelSubject: 'Objet', labelAmount: 'Montant',
+            linkText: 'ACCEPTER ou REFUSER LE DEVIS'
+          },
+          [Language.GERMAN]: {
+            subjectPrefix: 'ANGEBOT', salutation: 'Sehr geehrte(r)', intro: 'anbei finden Sie das angeforderte Angebot.',
+            delivery: 'Lieferzeit: {days} Werktage ab Auftragsbestätigung.',
+            decision: 'Sie können Ihre Entscheidung über den folgenden Link mitteilen:',
+            feedback: 'Ihr Feedback, auch im Falle einer Ablehnung, ist uns sehr wichtig, um die Qualität unserer Angebote ständig zu analysieren und zu verbessern.',
+            questions: "Bei Fragen zögern Sie bitte nicht, uns zu kontaktieren.",
+            wishing: "Wir wünschen Ihnen einen schönen Tag und freuen uns darauf, von Ihnen zu hören.",
+            kindRegards: 'Mit freundlichen Grüßen,', btnAccept: 'Akzeptieren', btnReject: 'Ablehnen', btnSendResponse: 'Antwort senden',
+            sentTitle: 'Gesendet!', sentBody: 'Ihre Antwort wurde vorbereitet.',
+            labelQuoteId: 'Angebots-ID', labelSubject: 'Betreff', labelAmount: 'Betrag',
+            linkText: 'ANGEBOT AKZEPTIEREN oder ABLEHNEN'
+          },
+          [Language.CATALAN]: {
+            subjectPrefix: 'PRESSUPOST', salutation: 'Benvolgut/da', intro: 'adjunt trobarà el pressupost sol·licitat.',
+            delivery: 'Termini de lliurament: {days} dies feiners des de la confirmació.',
+            decision: 'Pot comunicar la seva decisió a través del següent enllaç:',
+            feedback: 'La seva opinió, fins i tot en cas de rebuig, és molt important per a nosaltres per analitzar i millorar constantment la qualitat de les nostres propostes.',
+            questions: "Si té alguna pregunta, no dubti en contactar-nos.",
+            wishing: "Li desitgem un bon dia i esperem tenir notícies seves.",
+            kindRegards: 'Salutacions cordials,', btnAccept: 'Acceptar', btnReject: 'Rebutjar', btnSendResponse: 'Enviar Resposta',
+            sentTitle: 'Enviat!', sentBody: 'La seva resposta ha estat preparada.',
+            labelQuoteId: 'ID Pressupost', labelSubject: 'Assumpte', labelAmount: 'Import',
+            linkText: 'ACCEPTAR o REBUTJAR EL PRESSUPOST'
+          }
+        };
+
+        // --- APP COMPONENT ---
+        const App = () => {
+          const [view, setView] = useState('generator');
+          const [step, setStep] = useState(1);
+          const [sent, setSent] = useState(false);
+          const [decision, setDecision] = useState(null);
+          const [copied, setCopied] = useState(false);
+
+          const [formData, setFormData] = useState({
+            clientLanguage: Language.ENGLISH, 
+            emailTo: '',
+            emailCc: 'gr-quotes@dema-solutions.com',
+            recipientName: '', 
+            quoteId: new Date().getFullYear() + '/', 
+            subject: '', 
+            amount: '', 
+            deliveryDays: '3-5', 
+            signatureId: ''
+          });
+
+          useEffect(() => {
+            const params = new URLSearchParams(window.location.search);
+            if (params.get('view') === 'decision') {
+              setView('decision');
+              setFormData(prev => ({
+                ...prev,
+                clientLanguage: params.get('lang') || Language.ENGLISH,
+                quoteId: params.get('id') || '',
+                subject: params.get('sub') || '',
+                amount: params.get('amt') || '',
+                emailTo: params.get('to') || 'gr-quotes@dema-solutions.com'
+              }));
+            }
+          }, []);
+
+          const t = TRANSLATIONS[formData.clientLanguage] || TRANSLATIONS[Language.ENGLISH];
+
+          const linkUrl = useMemo(() => {
+             const baseUrl = window.location.href.split('?')[0];
+             return `${baseUrl}?view=decision&id=${encodeURIComponent(formData.quoteId)}&sub=${encodeURIComponent(formData.subject)}&amt=${encodeURIComponent(formData.amount)}&lang=${formData.clientLanguage}&to=${encodeURIComponent(formData.emailTo)}`;
+          }, [formData]);
+
+          // Testo semplice per mailto (senza HTML)
+          const emailBodyPlain = useMemo(() => {
+            const selectedSig = SIGNATURES.find(s => s.id === formData.signatureId);
+            const sigText = selectedSig ? `\n\n${selectedSig.name}\n${selectedSig.role}\nDEMA SOLUTIONS S.R.L.\n+39 039 9467 678\nwww.dema-solutions.com` : '';
+            
+            return `${t.salutation} ${formData.recipientName},\n${t.intro} (Ref: ${formData.quoteId})\n${t.delivery.replace('{days}', formData.deliveryDays)}\n${t.decision} ${t.linkText}\n${linkUrl}\n\n${t.feedback}\n\n${t.questions}\n${t.wishing}\n${t.kindRegards}${sigText}`;
+          }, [formData, t, linkUrl]);
+
+          // HTML per anteprima e copia incolla - REPLICATO FEDELMENTE SU APTOS 11PT
+          const emailBodyHtml = useMemo(() => {
+            const selectedSig = SIGNATURES.find(s => s.id === formData.signatureId);
+            
+            // Stili base per replicare Outlook/Aptos 11
+            const baseStyle = "font-family: 'Aptos', 'Calibri', 'Verdana', sans-serif; font-size: 11pt; color: #000000; line-height: 1.3;";
+            const linkStyle = "color: #0563C1; text-decoration: underline; font-weight: bold; text-transform: uppercase;";
+            const grayItalicStyle = "color: #5A5A5A; font-style: italic;";
+            
+            return `
+              <div style="${baseStyle}">
+                <p style="margin: 0 0 11pt 0;">
+                  ${t.salutation} ${formData.recipientName},<br>
+                  ${t.intro} (Ref: ${formData.quoteId})<br>
+                  ${t.delivery.replace('{days}', formData.deliveryDays)}<br>
+                  ${t.decision} <a href="${linkUrl}" style="${linkStyle}">${t.linkText}</a>
+                </p>
+                
+                <p style="margin: 0 0 11pt 0; ${grayItalicStyle}">
+                  ${t.feedback}
+                </p>
+                
+                <p style="margin: 0 0 11pt 0;">
+                  ${t.questions}<br>
+                  ${t.wishing}<br>
+                  ${t.kindRegards}
+                </p>
+                
+                ${selectedSig ? `
+                  <div style="margin-top: 11pt;">
+                    <strong>${selectedSig.name}</strong><br>
+                    <span style="color: #5A5A5A;">${selectedSig.role}</span><br>
+                    <strong><span style="color:#005a9c">DEMA SOLUTIONS S.R.L.</span></strong><br>
+                    <span style="display:inline-flex; align-items:center; gap: 4px;">📞 +39 039 9467 678</span><br>
+                    <span style="display:inline-flex; align-items:center; gap: 4px;">🌐 <a href="http://www.dema-solutions.com" style="color:#0563C1; text-decoration:underline;">www.dema-solutions.com</a></span>
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          }, [formData, t, linkUrl]);
+
+          const handleCreateMail = () => {
+            window.location.href = `mailto:${formData.emailTo}?cc=${formData.emailCc}&subject=${t.subjectPrefix}: ${formData.quoteId}&body=${encodeURIComponent(emailBodyPlain)}`;
+          };
+
+          const handleCopyHtml = async () => {
+             try {
+                const blobHtml = new Blob([emailBodyHtml], { type: 'text/html' });
+                const blobText = new Blob([emailBodyPlain], { type: 'text/plain' });
+                await navigator.clipboard.write([
+                    new ClipboardItem({
+                        'text/html': blobHtml,
+                        'text/plain': blobText
+                    })
+                ]);
+                setCopied(true);
+                setTimeout(() => setCopied(false), 2000);
+             } catch (err) {
+                 console.error('Failed to copy', err);
+                 // Fallback per browser datati
+                 const textarea = document.createElement('textarea');
+                 textarea.value = emailBodyPlain;
+                 document.body.appendChild(textarea);
+                 textarea.select();
+                 document.execCommand('copy');
+                 document.body.removeChild(textarea);
+                 setCopied(true);
+                 setTimeout(() => setCopied(false), 2000);
+             }
+          };
+
+          const handleSendResponse = () => {
+            const body = `${decision === 'accept' ? 'I ACCEPT' : 'I REJECT'} THE QUOTE ${formData.quoteId}`;
+            window.location.href = `mailto:${formData.emailTo}?subject=RE: ${formData.quoteId}&body=${encodeURIComponent(body)}`;
+            setSent(true);
+          };
+
+          // VIEW: CLIENT DECISION
+          if (view === 'decision') {
+            return (
+              <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
+                <div className="bg-white p-8 rounded-3xl shadow-xl max-w-md w-full text-center border border-slate-200">
+                  <img src={LOGO_URL} alt="DEMA" className="h-10 mx-auto mb-8" onError={(e) => e.currentTarget.style.display = 'none'} />
+                  {sent ? (
+                    <div className="animate-in fade-in zoom-in duration-300">
+                      <div className="bg-green-100 text-green-600 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6"><ThumbsUp size={32} /></div>
+                      <h2 className="text-2xl font-bold text-slate-800">{t.sentTitle}</h2>
+                      <p className="text-slate-500 mt-2">{t.sentBody}</p>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="bg-slate-50 p-6 rounded-2xl text-left mb-8 text-sm border border-slate-100 shadow-sm">
+                        <p className="mb-2"><strong className="text-slate-900">{t.labelQuoteId}:</strong> <span className="text-slate-600">{formData.quoteId}</span></p>
+                        <p className="mb-2"><strong className="text-slate-900">{t.labelSubject}:</strong> <span className="text-slate-600">{formData.subject}</span></p>
+                        <p><strong className="text-slate-900">{t.labelAmount}:</strong> <span className="text-slate-600">{formData.amount}</span></p>
+                      </div>
+                      <div className="flex gap-4 mb-8">
+                        <button onClick={() => setDecision('accept')} className={`flex-1 py-4 rounded-xl font-bold transition-all transform active:scale-95 ${decision === 'accept' ? 'bg-green-600 text-white shadow-lg shadow-green-200' : 'bg-white border-2 border-green-100 text-green-600 hover:bg-green-50'}`}>{t.btnAccept}</button>
+                        <button onClick={() => setDecision('reject')} className={`flex-1 py-4 rounded-xl font-bold transition-all transform active:scale-95 ${decision === 'reject' ? 'bg-red-600 text-white shadow-lg shadow-red-200' : 'bg-white border-2 border-red-100 text-red-600 hover:bg-red-50'}`}>{t.btnReject}</button>
+                      </div>
+                      {decision && (
+                        <button onClick={handleSendResponse} className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-3 hover:bg-slate-800 transition-all shadow-lg animate-in fade-in slide-in-from-bottom-4">
+                          <Send size={20} /> {t.btnSendResponse}
+                        </button>
+                      )}
+                    </>
+                  )}
+                </div>
+              </div>
             );
+          }
+
+          // VIEW: GENERATOR
+          return (
+            <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50">
+              <div className="bg-white p-10 rounded-[2rem] shadow-2xl max-w-2xl w-full border border-slate-100">
+                <div className="flex justify-between items-center mb-10 pb-6 border-b border-slate-50">
+                  <img src={LOGO_URL} alt="DEMA" className="h-8" onError={(e) => e.currentTarget.style.display = 'none'} />
+                  <div className="bg-slate-100 px-4 py-1.5 rounded-full text-[10px] font-bold text-slate-500 uppercase tracking-widest">Quote Manager</div>
+                </div>
+
+                {step === 1 ? (
+                  <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
+                    <h2 className="text-xl font-bold text-slate-800 mb-8 flex items-center gap-3">
+                      <div className="p-2 bg-blue-100 rounded-lg text-blue-600"><Globe size={20} /></div>
+                      Choose client language:
+                    </h2>
+                    <div className="grid grid-cols-2 gap-4">
+                      {Object.values(Language).map(lang => (
+                        <button key={lang} onClick={() => { setFormData({...formData, clientLanguage: lang}); setStep(2); }} 
+                          className="p-5 rounded-2xl border border-slate-100 bg-slate-50 hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700 text-slate-600 font-semibold transition-all text-sm flex justify-between items-center group shadow-sm hover:shadow-md">
+                          {lang} <ChevronRight size={18} className="text-slate-300 group-hover:text-blue-500 transition-colors" />
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-6 animate-in slide-in-from-right duration-300">
+                    <div className="grid grid-cols-2 gap-5">
+                      <div className="col-span-2">
+                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1 mb-1 block">Recipient Name</label>
+                        <input placeholder="e.g. Maria Rossi" value={formData.recipientName} onChange={e => setFormData({...formData, recipientName: e.target.value})} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all font-medium text-slate-700" />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1 mb-1 block">Quote ID</label>
+                        <input value={formData.quoteId} onChange={e => setFormData({...formData, quoteId: e.target.value})} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all font-medium text-slate-700" />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1 mb-1 block">Amount</label>
+                        <input placeholder="e.g. 1.500€" value={formData.amount} onChange={e => setFormData({...formData, amount: e.target.value})} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all font-medium text-slate-700" />
+                      </div>
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1 mb-1 block">Delivery (Days)</label>
+                        <input placeholder="3-5" value={formData.deliveryDays} onChange={e => setFormData({...formData, deliveryDays: e.target.value})} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all font-medium text-slate-700" />
+                      </div>
+                      <div className="col-span-1">
+                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1 mb-1 block">Subject</label>
+                        <input placeholder="Project details..." value={formData.subject} onChange={e => setFormData({...formData, subject: e.target.value})} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all font-medium text-slate-700" />
+                      </div>
+                      <div className="col-span-2">
+                        <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1 mb-1 block">Signature</label>
+                        <div className="relative">
+                          <select value={formData.signatureId} onChange={e => setFormData({...formData, signatureId: e.target.value})} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all font-medium text-slate-700 appearance-none cursor-pointer">
+                            <option value="">Select your name...</option>
+                            {SIGNATURES.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                          </select>
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                            <ChevronRight size={16} className="rotate-90" />
+                          </div>
+                        </div>
+                      </div>
+                      <div>
+                         <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1 mb-1 block">Client Email</label>
+                         <input placeholder="client@company.com" value={formData.emailTo} onChange={e => setFormData({...formData, emailTo: e.target.value})} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all font-medium text-slate-700" />
+                      </div>
+                      <div>
+                         <label className="text-[11px] font-bold text-slate-400 uppercase tracking-wider ml-1 mb-1 block">CC (Optional)</label>
+                         <input placeholder="cc@company.com" value={formData.emailCc} onChange={e => setFormData({...formData, emailCc: e.target.value})} className="w-full p-4 rounded-xl bg-slate-50 border border-slate-100 focus:border-blue-500 focus:ring-4 focus:ring-blue-50 outline-none transition-all font-medium text-slate-700" />
+                      </div>
+                    </div>
+                    
+                    {/* EMAIL PREVIEW SECTION */}
+                    <div className="mt-8 bg-slate-50 rounded-xl p-5 border border-slate-200 shadow-sm">
+                       <div className="flex justify-between items-center mb-4">
+                           <h3 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-2"><Eye size={14} /> Email Preview</h3>
+                           <button onClick={handleCopyHtml} className="text-xs font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
+                               {copied ? <Check size={14} /> : <Copy size={14} />} {copied ? 'Copied!' : 'Copy Text'}
+                           </button>
+                       </div>
+                       <div className="font-sans text-sm text-slate-800 leading-relaxed bg-white p-6 rounded-lg border border-slate-100 shadow-inner" dangerouslySetInnerHTML={{ __html: emailBodyHtml }}></div>
+                    </div>
+
+                    <div className="flex gap-4 pt-4 mt-4 border-t border-slate-50">
+                      <button onClick={() => setStep(1)} className="px-6 py-4 font-bold text-slate-400 hover:text-slate-600 transition-colors rounded-xl hover:bg-slate-50">Back</button>
+                      <button onClick={handleCreateMail} className="flex-1 bg-blue-600 text-white py-4 px-8 rounded-xl font-bold shadow-lg shadow-blue-200 flex items-center justify-center gap-3 hover:bg-blue-700 transition-all transform active:scale-[0.98]">
+                        <Mail size={20} /> Create Email (Mailto)
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        };
+
+        // --- RENDER ---
+        try {
+            const rootElement = document.getElementById('root');
+            if (rootElement) {
+                const root = ReactDOM.createRoot(rootElement);
+                root.render(<App />);
+            }
+        } catch (error) {
+            console.error("Errore di rendering:", error);
         }
     </script>
 </body>
