@@ -1,0 +1,5 @@
+{
+  "name": "DEMA Solutions Quote Generator",
+  "description": "A professional tool to generate quote request emails in multiple languages (English, Italian, Spanish, Catalan, German, French) for DEMA Solutions clients.",
+  "requestFramePermissions": []
+}
