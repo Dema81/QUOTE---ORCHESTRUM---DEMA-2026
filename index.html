@@ -60,7 +60,7 @@
     <script type="text/babel" data-type="module">
         import React, { useState, useEffect, useMemo } from 'react';
         import ReactDOM from 'react-dom/client';
-        import { Mail, Send, ThumbsUp, Globe, ChevronRight, Eye, Copy, Check } from 'lucide-react';
+        import { Mail, Send, ThumbsUp, Globe, ChevronRight, Eye, Copy, Check, AlertCircle } from 'lucide-react';
 
         // --- GESTIONE ERRORI GLOBALE ---
         window.onerror = function(message, source, lineno, colno, error) {
@@ -106,7 +106,11 @@
             kindRegards: 'Kind regards,', btnAccept: 'Accept quote', btnReject: 'Reject quote', btnSendResponse: 'Send Response',
             sentTitle: 'Success!', sentBody: 'Your response has been prepared.',
             labelQuoteId: 'Quote ID', labelSubject: 'Subject', labelAmount: 'Amount',
-            linkText: 'ACCEPT OR REJECT THE QUOTE'
+            linkText: 'ACCEPT OR REJECT THE QUOTE',
+            reasonTitle: 'Please select a reason for rejection:',
+            reasonTime: 'Delivery time too long',
+            reasonPrice: 'Price slightly higher than another provider',
+            reasonBudget: 'Amount out of budget'
           },
           [Language.ITALIAN]: {
             subjectPrefix: 'PREVENTIVO', salutation: 'Gentile', intro: 'in allegato trovi il preventivo richiesto.',
@@ -118,7 +122,11 @@
             kindRegards: 'Cordiali saluti,', btnAccept: 'Accetta preventivo', btnReject: 'Rifiuta preventivo', btnSendResponse: 'Invia Risposta',
             sentTitle: 'Inviato!', sentBody: 'La tua risposta è stata preparata.',
             labelQuoteId: 'ID Preventivo', labelSubject: 'Oggetto', labelAmount: 'Importo',
-            linkText: 'ACCETTA o RIFIUTA IL PREVENTIVO'
+            linkText: 'ACCETTA o RIFIUTA IL PREVENTIVO',
+            reasonTitle: 'Seleziona il motivo del rifiuto:',
+            reasonTime: 'Tempi troppo lunghi',
+            reasonPrice: 'Prezzo poco più alto di un altro fornitore',
+            reasonBudget: 'Importo fuori budget'
           },
           [Language.SPANISH]: {
             subjectPrefix: 'PRESUPUESTO', salutation: 'Estimado/a', intro: 'adjunto encontrará el presupuesto solicitado.',
@@ -130,7 +138,11 @@
             kindRegards: 'Saludos cordiales,', btnAccept: 'Aceptar', btnReject: 'Rechazar', btnSendResponse: 'Enviar Respuesta',
             sentTitle: '¡Enviado!', sentBody: 'Su respuesta ha sido preparada.',
             labelQuoteId: 'ID Presupuesto', labelSubject: 'Asunto', labelAmount: 'Importe',
-            linkText: 'ACEPTAR o RECHAZAR EL PRESUPUESTO'
+            linkText: 'ACEPTAR o RECHAZAR EL PRESUPUESTO',
+            reasonTitle: 'Seleccione el motivo del rechazo:',
+            reasonTime: 'Plazo de entrega demasiado largo',
+            reasonPrice: 'Precio un poco más alto que otro proveedor',
+            reasonBudget: 'Importe fuera de presupuesto'
           },
           [Language.FRENCH]: {
             subjectPrefix: 'DEVIS', salutation: 'Cher/Chère', intro: 'veuillez trouver ci-joint le devis demandé.',
@@ -142,7 +154,11 @@
             kindRegards: 'Cordialement,', btnAccept: 'Accepter', btnReject: 'Refuser', btnSendResponse: 'Envoyer la réponse',
             sentTitle: 'Envoyé !', sentBody: 'Votre réponse a été préparée.',
             labelQuoteId: 'ID Devis', labelSubject: 'Objet', labelAmount: 'Montant',
-            linkText: 'ACCEPTER ou REFUSER LE DEVIS'
+            linkText: 'ACCEPTER ou REFUSER LE DEVIS',
+            reasonTitle: 'Veuillez sélectionner un motif de refus :',
+            reasonTime: 'Délai de livraison trop long',
+            reasonPrice: 'Prix légèrement supérieur à un autre fournisseur',
+            reasonBudget: 'Montant hors budget'
           },
           [Language.GERMAN]: {
             subjectPrefix: 'ANGEBOT', salutation: 'Sehr geehrte(r)', intro: 'anbei finden Sie das angeforderte Angebot.',
@@ -154,7 +170,11 @@
             kindRegards: 'Mit freundlichen Grüßen,', btnAccept: 'Akzeptieren', btnReject: 'Ablehnen', btnSendResponse: 'Antwort senden',
             sentTitle: 'Gesendet!', sentBody: 'Ihre Antwort wurde vorbereitet.',
             labelQuoteId: 'Angebots-ID', labelSubject: 'Betreff', labelAmount: 'Betrag',
-            linkText: 'ANGEBOT AKZEPTIEREN oder ABLEHNEN'
+            linkText: 'ANGEBOT AKZEPTIEREN oder ABLEHNEN',
+            reasonTitle: 'Bitte wählen Sie einen Grund für die Ablehnung:',
+            reasonTime: 'Lieferzeit zu lang',
+            reasonPrice: 'Preis etwas höher als bei einem anderen Anbieter',
+            reasonBudget: 'Betrag außerhalb des Budgets'
           },
           [Language.CATALAN]: {
             subjectPrefix: 'PRESSUPOST', salutation: 'Benvolgut/da', intro: 'adjunt trobarà el pressupost sol·licitat.',
@@ -166,7 +186,11 @@
             kindRegards: 'Salutacions cordials,', btnAccept: 'Acceptar', btnReject: 'Rebutjar', btnSendResponse: 'Enviar Resposta',
             sentTitle: 'Enviat!', sentBody: 'La seva resposta ha estat preparada.',
             labelQuoteId: 'ID Pressupost', labelSubject: 'Assumpte', labelAmount: 'Import',
-            linkText: 'ACCEPTAR o REBUTJAR EL PRESSUPOST'
+            linkText: 'ACCEPTAR o REBUTJAR EL PRESSUPOST',
+            reasonTitle: 'Seleccioneu el motiu del rebuig:',
+            reasonTime: 'Termini de lliurament massa llarg',
+            reasonPrice: 'Preu una mica més alt que un altre proveïdor',
+            reasonBudget: 'Import fora de pressupost'
           }
         };
 
@@ -175,7 +199,8 @@
           const [view, setView] = useState('generator');
           const [step, setStep] = useState(1);
           const [sent, setSent] = useState(false);
-          const [decision, setDecision] = useState(null);
+          const [decision, setDecision] = useState(null); // 'accept' or 'reject'
+          const [rejectionReason, setRejectionReason] = useState('');
           const [copied, setCopied] = useState(false);
 
           const [formData, setFormData] = useState({
@@ -292,8 +317,25 @@
           };
 
           const handleSendResponse = () => {
-            const body = `${decision === 'accept' ? 'I ACCEPT' : 'I REJECT'} THE QUOTE ${formData.quoteId}`;
-            window.location.href = `mailto:${formData.emailTo}?subject=RE: ${formData.quoteId}&body=${encodeURIComponent(body)}`;
+            let body = "";
+            let subject = "RE: " + formData.quoteId;
+
+            if (decision === 'accept') {
+                body = `I ACCEPT THE QUOTE ${formData.quoteId}\n\n`;
+            } else {
+                body = `I REJECT THE QUOTE ${formData.quoteId}\n\n`;
+                if (rejectionReason) {
+                    body += `Reason: ${rejectionReason}\n\n`;
+                }
+            }
+
+            // Aggiungi dettagli di contesto come nel vecchio codice
+            body += `Details:\n------------------------\n`;
+            body += `Quote ID: ${formData.quoteId}\n`;
+            body += `Subject: ${formData.subject}\n`;
+            body += `Amount: ${formData.amount}\n`;
+
+            window.location.href = `mailto:${formData.emailTo}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
             setSent(true);
           };
 
@@ -316,11 +358,35 @@
                         <p className="mb-2"><strong className="text-slate-900">{t.labelSubject}:</strong> <span className="text-slate-600">{formData.subject}</span></p>
                         <p><strong className="text-slate-900">{t.labelAmount}:</strong> <span className="text-slate-600">{formData.amount}</span></p>
                       </div>
-                      <div className="flex gap-4 mb-8">
-                        <button onClick={() => setDecision('accept')} className={`flex-1 py-4 rounded-xl font-bold transition-all transform active:scale-95 ${decision === 'accept' ? 'bg-green-600 text-white shadow-lg shadow-green-200' : 'bg-white border-2 border-green-100 text-green-600 hover:bg-green-50'}`}>{t.btnAccept}</button>
-                        <button onClick={() => setDecision('reject')} className={`flex-1 py-4 rounded-xl font-bold transition-all transform active:scale-95 ${decision === 'reject' ? 'bg-red-600 text-white shadow-lg shadow-red-200' : 'bg-white border-2 border-red-100 text-red-600 hover:bg-red-50'}`}>{t.btnReject}</button>
+                      
+                      <div className="flex gap-4 mb-6">
+                        <button onClick={() => { setDecision('accept'); setRejectionReason(''); }} className={`flex-1 py-4 rounded-xl font-bold transition-all transform active:scale-95 ${decision === 'accept' ? 'bg-green-600 text-white shadow-lg shadow-green-200 ring-2 ring-green-600 ring-offset-2' : 'bg-white border-2 border-green-100 text-green-600 hover:bg-green-50'}`}>{t.btnAccept}</button>
+                        <button onClick={() => { setDecision('reject'); }} className={`flex-1 py-4 rounded-xl font-bold transition-all transform active:scale-95 ${decision === 'reject' ? 'bg-red-600 text-white shadow-lg shadow-red-200 ring-2 ring-red-600 ring-offset-2' : 'bg-white border-2 border-red-100 text-red-600 hover:bg-red-50'}`}>{t.btnReject}</button>
                       </div>
-                      {decision && (
+
+                      {/* AREA MOTIVI RIFIUTO */}
+                      {decision === 'reject' && (
+                          <div className="text-left bg-red-50 p-4 rounded-xl mb-6 animate-in slide-in-from-top-2 border border-red-100">
+                              <p className="font-semibold text-red-800 mb-3 text-sm">{t.reasonTitle}</p>
+                              <div className="space-y-2">
+                                  <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-red-100 cursor-pointer transition-colors">
+                                      <input type="radio" name="reason" value={t.reasonTime} onChange={(e) => setRejectionReason(e.target.value)} className="w-4 h-4 text-red-600 border-red-300 focus:ring-red-500" />
+                                      <span className="text-sm text-red-700">{t.reasonTime}</span>
+                                  </label>
+                                  <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-red-100 cursor-pointer transition-colors">
+                                      <input type="radio" name="reason" value={t.reasonPrice} onChange={(e) => setRejectionReason(e.target.value)} className="w-4 h-4 text-red-600 border-red-300 focus:ring-red-500" />
+                                      <span className="text-sm text-red-700">{t.reasonPrice}</span>
+                                  </label>
+                                  <label className="flex items-center gap-3 p-2 rounded-lg hover:bg-red-100 cursor-pointer transition-colors">
+                                      <input type="radio" name="reason" value={t.reasonBudget} onChange={(e) => setRejectionReason(e.target.value)} className="w-4 h-4 text-red-600 border-red-300 focus:ring-red-500" />
+                                      <span className="text-sm text-red-700">{t.reasonBudget}</span>
+                                  </label>
+                              </div>
+                          </div>
+                      )}
+
+                      {/* PULSANTE INVIO */}
+                      {(decision === 'accept' || (decision === 'reject' && rejectionReason)) && (
                         <button onClick={handleSendResponse} className="w-full bg-slate-900 text-white py-4 rounded-xl font-bold flex items-center justify-center gap-3 hover:bg-slate-800 transition-all shadow-lg animate-in fade-in slide-in-from-bottom-4">
                           <Send size={20} /> {t.btnSendResponse}
                         </button>
