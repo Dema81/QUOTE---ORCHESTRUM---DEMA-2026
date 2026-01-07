@@ -4,8 +4,8 @@ import {
   ChevronRight, ChevronLeft, Copy, Mail, CheckCircle2, 
   Globe, Loader2, Edit3, AlertTriangle, X, Send, PenTool, ThumbsUp
 } from 'lucide-react';
-import { Language, QuoteFormData } from './types';
-import { TRANSLATIONS } from './constants';
+import { Language, QuoteFormData } from './types.ts';
+import { TRANSLATIONS } from './constants.ts';
 
 const SIGNATURES = [
   { id: 'aleksandra', name: 'Aleksandra Labudovic', role: 'Sales Manager', company: 'DEMA SOLUTIONS S.R.L.', phone: '+39 039 9467 678', website: 'www.dema-solutions.com' },
@@ -24,7 +24,6 @@ const App: React.FC = () => {
   const [sent, setSent] = useState(false);
   const [decision, setDecision] = useState<'accept' | 'reject' | null>(null);
   const [rejectionReason, setRejectionReason] = useState('');
-  const [showResponseConfirm, setShowResponseConfirm] = useState(false);
 
   const [formData, setFormData] = useState<QuoteFormData>({
     clientLanguage: Language.ENGLISH,
@@ -84,7 +83,6 @@ const App: React.FC = () => {
     body += `${t.responseDetailsLabel}:\n-----------------------\nID: ${formData.quoteId}\nSubj: ${formData.subject}\nAmt: ${formData.amount}`;
     window.location.href = `mailto:${formData.emailTo || 'gr-quotes@dema-solutions.com'}?cc=${encodeURIComponent(formData.emailCc)}&subject=${encodeURIComponent(mailSubject)}&body=${encodeURIComponent(body)}`;
     setSent(true);
-    setShowResponseConfirm(false);
   };
 
   if (view === 'decision') {
