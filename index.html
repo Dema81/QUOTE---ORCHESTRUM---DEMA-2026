@@ -7,11 +7,21 @@
     <title>DEMA Solutions - Quote System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Babel standalone trasforma il codice TSX in JS direttamente nel browser -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
+        #root:empty::before {
+            content: "Loading system...";
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            color: #64748b;
+            font-size: 0.875rem;
+        }
     </style>
-<script type="importmap">
+    <script type="importmap">
 {
   "imports": {
     "lucide-react": "https://esm.sh/lucide-react@0.460.0",
@@ -23,11 +33,12 @@
   }
 }
 </script>
-<link rel="stylesheet" href="/index.css">
 </head>
 <body>
     <div id="root"></div>
-    <script type="text/babel" data-type="module" src="index.tsx"></script>
-<script type="module" src="/index.tsx"></script>
+    <!-- Carichiamo index.tsx come modulo Babel -->
+    <script type="text/babel" data-type="module">
+        import './index.tsx';
+    </script>
 </body>
 </html>
