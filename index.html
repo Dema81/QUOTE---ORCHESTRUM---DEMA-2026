@@ -7,7 +7,7 @@
     <title>DEMA Solutions - Quote System</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <!-- Babel trasforma il codice TSX nel browser -->
+    <!-- Babel Standalone: compila il codice TSX nel browser in tempo reale -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f8fafc; }
@@ -30,7 +30,6 @@
     "react-dom": "https://esm.sh/react-dom@18.2.0",
     "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
     "lucide-react": "https://esm.sh/lucide-react@0.460.0",
-    "react-dom/": "https://esm.sh/react-dom@^19.2.3/",
     "react/": "https://esm.sh/react@^19.2.3/"
   }
 }
@@ -39,16 +38,20 @@
 <body>
     <div id="root"></div>
     
-    <!-- Script di debug per vedere errori in console se il caricamento fallisce -->
-    <script>
-      window.onerror = function(msg, url, line) {
-        console.error("Global Error: " + msg + " at " + url + ":" + line);
-      };
-    </script>
-
-    <!-- Caricamento principale -->
     <script type="text/babel" data-type="module">
-        import './index.tsx';
+        import React from 'react';
+        import ReactDOM from 'react-dom/client';
+        import App from './App.tsx';
+
+        const rootElement = document.getElementById('root');
+        if (rootElement) {
+            const root = ReactDOM.createRoot(rootElement);
+            root.render(
+                <React.StrictMode>
+                    <App />
+                </React.StrictMode>
+            );
+        }
     </script>
 </body>
 </html>
